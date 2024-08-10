@@ -41,11 +41,13 @@ class _NewStoryPageState extends State<NewStoryPage> {
       }
 
       String authorId = userDoc['randomId'];
+      String authorUsername = userDoc["username"];
 
       await FirebaseFirestore.instance.collection('stories').add({
         'title': titleController.text,
         'content': contentController.text,
         'authorId': authorId,
+        "authorUsername": authorUsername,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
