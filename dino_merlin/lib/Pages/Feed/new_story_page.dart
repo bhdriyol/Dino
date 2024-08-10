@@ -63,33 +63,35 @@ class _NewStoryPageState extends State<NewStoryPage> {
       appBar: AppBar(
         title: const Text('Add a Story'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              maxLength: 35,
-              controller: titleController,
-              decoration: InputDecoration(
-                labelText: 'Title',
-                errorText: titleError.isNotEmpty ? titleError : null,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextField(
+                maxLength: 35,
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  errorText: titleError.isNotEmpty ? titleError : null,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              maxLines: null,
-              controller: contentController,
-              decoration: InputDecoration(
-                labelText: 'Content',
-                errorText: contentError.isNotEmpty ? contentError : null,
+              const SizedBox(height: 10),
+              TextField(
+                maxLines: null,
+                controller: contentController,
+                decoration: InputDecoration(
+                  labelText: 'Content',
+                  errorText: contentError.isNotEmpty ? contentError : null,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            EntryButton(
-              onPressed: _addStory,
-              buttonText: "Submit",
-            ),
-          ],
+              const SizedBox(height: 20),
+              EntryButton(
+                onPressed: _addStory,
+                buttonText: "Submit",
+              ),
+            ],
+          ),
         ),
       ),
     );
