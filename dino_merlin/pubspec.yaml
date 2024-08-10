@@ -1,0 +1,85 @@
+name: dino_merlin
+description: "Social media app."
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# [VersionName]+[VersionNumber] -> The version number follow the below convetion:
+#
+# XXXXX.YY.ZZZ
+#
+# The X represents the major releases, and can be up to infinity. Never start by a zero
+# The Y represents the minor releases, and can be up to 99. Always start by a zero
+# The Z represents the patch releases, and can be up to 999. Always start by a zero
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.4.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.6
+  firebase_core: ^3.3.0
+  firebase_auth: ^5.1.4
+  cloud_firestore: ^5.2.1
+  uuid: ^4.4.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^4.0.0
+
+
+flutter:
+
+
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  # assets:
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
+
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito/Nunito-Regular.ttf
+        - asset: assets/fonts/Nunito/Nunito-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Nunito/Nunito-Black.ttf
+          weight: 900
+        - asset: assets/fonts/Nunito/Nunito-BlackItalic.ttf
+          style: italic
+          weight: 900
+        - asset: assets/fonts/Nunito/Nunito-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Nunito/Nunito-ExtraBoldItalic.ttf
+          style: italic
+          weight: 800
+        - asset: assets/fonts/Nunito/Nunito-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Nunito/Nunito-BoldItalic.ttf
+          style: italic
+          weight: 700
+        - asset: assets/fonts/Nunito/Nunito-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Nunito/Nunito-SemiBoldItalic.ttf
+          style: italic
+          weight: 600
+        - asset: assets/fonts/Nunito/Nunito-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Nunito/Nunito-MediumItalic.ttf
+          style: italic
+          weight: 500
+        - asset: assets/fonts/Nunito/Nunito-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Nunito/Nunito-LightItalic.ttf
+          style: italic
+          weight: 300
+        - asset: assets/fonts/Nunito/Nunito-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Nunito/Nunito-ExtraLightItalic.ttf
+          style: italic
+          weight: 200

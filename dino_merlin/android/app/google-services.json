@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "67561219359",
+    "project_id": "dino-merlin",
+    "storage_bucket": "dino-merlin.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:67561219359:android:d0c99440ac6bf7813b3c2a",
+        "android_client_info": {
+          "package_name": "com.example.dino_merlin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAsEu7vDlVnzDeviwfLlZOInBw2LTM5qbs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
