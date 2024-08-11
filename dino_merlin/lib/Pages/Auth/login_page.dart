@@ -1,9 +1,10 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dino_merlin/Pages/Auth/Widgets/email_textfield.dart';
 import 'package:dino_merlin/Pages/Auth/Widgets/entry_button.dart';
 import 'package:dino_merlin/Pages/Auth/Widgets/password_textfield.dart';
 import 'package:dino_merlin/Pages/BottomBar/bottom_nav_bar.dart';
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -19,6 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   String password = '';
   String emailError = '';
   String passwordError = '';
+  bool rememberMe = false;
 
   void login() async {
     setState(() {
@@ -31,9 +33,26 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     try {
-      await auth.signInWithEmailAndPassword(email: email, password: password);
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const BottomNavBar()));
+      UserCredential userCredential = await auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      if (userCredential.user != null) {
+        if (userCredential.user!.emailVerified) {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          prefs.setBool('rememberMe', rememberMe);
+
+          Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const BottomNavBar()));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Please verify your email before logging in."),
+            duration: Duration(seconds: 3),
+          ));
+          await auth.signOut();
+        }
+      }
     } catch (e) {
       setState(() {
         emailError = 'Login failed. Please check your credentials.';
@@ -45,7 +64,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -84,6 +102,24 @@ class _LoginPageState extends State<LoginPage> {
                     password = value;
                   });
                 },
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(left: 10),
+                    child: Text('Remember Me'),
+                  ),
+                  Switch(
+                    value: rememberMe,
+                    onChanged: (value) {
+                      setState(() {
+                        rememberMe = value;
+                      });
+                    },
+                  ),
+                ],
               ),
               const SizedBox(height: 20),
               EntryButton(onPressed: login, buttonText: "Log in"),

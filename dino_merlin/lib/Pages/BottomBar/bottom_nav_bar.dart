@@ -1,5 +1,5 @@
 import 'package:dino_merlin/Pages/Feed/feed_page.dart';
-import 'package:dino_merlin/Pages/User/profile_page.dart';
+import 'package:dino_merlin/Pages/User/user_profile_page.dart';
 import 'package:flutter/material.dart';
 
 class BottomNavBar extends StatefulWidget {

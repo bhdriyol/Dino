@@ -42,12 +42,16 @@ class _NewStoryPageState extends State<NewStoryPage> {
 
       String authorId = userDoc['randomId'];
       String authorUsername = userDoc["username"];
+      String authorProfilePic = userDoc["profilePic"];
+      String authorBiography = userDoc["biography"];
 
       await FirebaseFirestore.instance.collection('stories').add({
         'title': titleController.text,
         'content': contentController.text,
         'authorId': authorId,
         "authorUsername": authorUsername,
+        "authorProfilePic": authorProfilePic,
+        "authorBiography": authorBiography,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
@@ -69,7 +73,7 @@ class _NewStoryPageState extends State<NewStoryPage> {
           child: Column(
             children: [
               TextField(
-                maxLength: 35,
+                maxLength: 40,
                 controller: titleController,
                 decoration: InputDecoration(
                   labelText: 'Title',

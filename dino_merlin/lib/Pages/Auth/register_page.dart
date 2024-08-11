@@ -19,6 +19,8 @@ class _RegisterPageState extends State<RegisterPage> {
   String email = '';
   String password = '';
   String username = "";
+  String profilePic = "";
+  String biography = "";
   String emailError = '';
   String usernameError = "";
   String passwordError = '';
@@ -40,10 +42,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
       var uuid = const Uuid();
       String randomId = uuid.v4();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Succesfully Registered!"),
-        duration: Duration(milliseconds: 500),
-      ));
+
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
@@ -51,12 +50,25 @@ class _RegisterPageState extends State<RegisterPage> {
         'email': email,
         'randomId': randomId,
         "username": username,
-        "password": password,
+        "profilePic": profilePic,
+        "biography": biography,
+        'registerDate': FieldValue.serverTimestamp(),
       }).then((_) {
         print('User data added to Firestore');
       }).catchError((error) {
         print('Error adding user data: $error');
       });
+
+      // Send email verification
+      if (userCredential.user != null) {
+        await userCredential.user!.sendEmailVerification();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              "Succesfully Registered! Please check your email to verify your account."),
+          duration: Duration(seconds: 5),
+        ));
+      }
+
       Navigator.pop(context);
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -81,15 +93,26 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sign Up'),
-      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              SignUpText().signUpText,
+              const SizedBox(
+                height: 10,
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 80),
+                child: Divider(
+                  height: 20,
+                  thickness: 4,
+                ),
+              ),
+              const SizedBox(
+                height: 30,
+              ),
               EmailTextField(
                 email: email,
                 errorText: emailError,
@@ -146,6 +169,14 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
   }
+}
+
+class SignUpText {
+  Text signUpText = const Text(
+    "Sign Up",
+    style:
+        TextStyle(fontSize: 50, fontWeight: FontWeight.w700, letterSpacing: 15),
+  );
 }
 
 class BottomTextStyle {

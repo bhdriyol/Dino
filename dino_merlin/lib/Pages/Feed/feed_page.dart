@@ -1,4 +1,5 @@
 import 'package:dino_merlin/Pages/Feed/new_story_page.dart';
+import 'package:dino_merlin/Widgets/feed_stories_card.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -34,9 +35,13 @@ class FeedPage extends StatelessWidget {
           return ListView.builder(
             itemCount: storiesDocs.length,
             itemBuilder: (ctx, index) {
-              return ListTile(
-                title: Text(storiesDocs[index]['title']),
-                subtitle: Text(storiesDocs[index]['content']),
+              return StoriesCard(
+                title: storiesDocs[index]["title"],
+                content: storiesDocs[index]["content"],
+                authorUsername: storiesDocs[index]["authorUsername"],
+                authorProfilePic: storiesDocs[index]["authorProfilePic"],
+                authorId: storiesDocs[index]["authorId"],
+                authorBiography: storiesDocs[index]["authorBiography"],
               );
             },
           );
