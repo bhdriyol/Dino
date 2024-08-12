@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FeedPage extends StatelessWidget {
-  const FeedPage({super.key});
-
+  FeedPage({
+    super.key,
+  });
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -42,6 +43,7 @@ class FeedPage extends StatelessWidget {
                 authorProfilePic: storiesDocs[index]["authorProfilePic"],
                 authorId: storiesDocs[index]["authorId"],
                 authorBiography: storiesDocs[index]["authorBiography"],
+                storyId: storiesDocs[index]["storyId"],
               );
             },
           );

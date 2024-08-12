@@ -11,12 +11,12 @@ class BottomNavBar extends StatefulWidget {
 
 class _BottomNavBarState extends State<BottomNavBar> {
   int selectedIndex = 0;
-  static const List<Widget> widgetOptions = <Widget>[
+  static List<Widget> widgetOptions = <Widget>[
     FeedPage(),
-    Text(
+    const Text(
       'Index 1: Notifications',
     ),
-    ProfilePage(),
+    const ProfilePage(),
   ];
 
   void onItemTapped(int index) {

@@ -5,7 +5,6 @@ import 'package:dino_merlin/Pages/Auth/Widgets/username_textfield.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:uuid/uuid.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -40,18 +39,14 @@ class _RegisterPageState extends State<RegisterPage> {
       UserCredential userCredential = await auth.createUserWithEmailAndPassword(
           email: email, password: password);
 
-      var uuid = const Uuid();
-      String randomId = uuid.v4();
+      // Use the Firebase Authentication uid as the document ID
+      String userId = userCredential.user!.uid;
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .set({
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
         'email': email,
-        'randomId': randomId,
-        "username": username,
-        "profilePic": profilePic,
-        "biography": biography,
+        'username': username,
+        'profilePic': profilePic,
+        'biography': biography,
         'registerDate': FieldValue.serverTimestamp(),
       }).then((_) {
         print('User data added to Firestore');
@@ -64,7 +59,7 @@ class _RegisterPageState extends State<RegisterPage> {
         await userCredential.user!.sendEmailVerification();
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text(
-              "Succesfully Registered! Please check your email to verify your account."),
+              "Successfully Registered! Please check your email to verify your account."),
           duration: Duration(seconds: 5),
         ));
       }

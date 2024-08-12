@@ -40,18 +40,23 @@ class _NewStoryPageState extends State<NewStoryPage> {
         return;
       }
 
-      String authorId = userDoc['randomId'];
       String authorUsername = userDoc["username"];
       String authorProfilePic = userDoc["profilePic"];
       String authorBiography = userDoc["biography"];
 
-      await FirebaseFirestore.instance.collection('stories').add({
+      String storyId =
+          FirebaseFirestore.instance.collection('stories').doc().id;
+
+      await FirebaseFirestore.instance.collection('stories').doc(storyId).set({
+        'storyId': storyId,
         'title': titleController.text,
         'content': contentController.text,
-        'authorId': authorId,
+        'authorId': currentUserId,
         "authorUsername": authorUsername,
         "authorProfilePic": authorProfilePic,
         "authorBiography": authorBiography,
+        "likes": [],
+        "dislikes": [],
         'timestamp': FieldValue.serverTimestamp(),
       });
 

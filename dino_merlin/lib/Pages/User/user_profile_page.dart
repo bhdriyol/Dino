@@ -14,17 +14,20 @@ class ProfilePage extends StatefulWidget {
   _ProfilePageState createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageState extends State<ProfilePage>
+    with SingleTickerProviderStateMixin {
   final ImagePicker _picker = ImagePicker();
   String? profilePictureUrl;
   String? nickname;
   String? biography;
   bool isLoading = false;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   Future<void> _loadUserData() async {
@@ -85,135 +88,129 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => logOut(context),
-          ),
-        ],
-      ),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance
-            .collection('users')
-            .doc(FirebaseAuth.instance.currentUser!.uid)
-            .get(),
-        builder: (ctx, userSnapshot) {
-          if (userSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('My Profile'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () => logOut(context),
+            ),
+          ],
+        ),
+        body: FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance
+              .collection('users')
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .get(),
+          builder: (ctx, userSnapshot) {
+            if (userSnapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (userSnapshot.hasError) {
-            return Center(
-                child: Text('Error: ${userSnapshot.error.toString()}'));
-          }
+            if (userSnapshot.hasError) {
+              return Center(
+                  child: Text('Error: ${userSnapshot.error.toString()}'));
+            }
 
-          if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
-            return const Center(child: Text('User data not found.'));
-          }
+            if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+              return const Center(child: Text('User data not found.'));
+            }
 
-          final userDoc = userSnapshot.data!;
-          final authorId = userDoc['randomId'];
-          final profilePictureUrl = userDoc['profilePic'] ?? '';
+            final userDoc = userSnapshot.data!;
+            final profilePictureUrl = userDoc['profilePic'] ?? '';
 
-          return Column(
-            mainAxisSize: MainAxisSize
-                .min, // Column'un çocuklarına göre boyutlanmasını sağla
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: pickImage,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundImage: profilePictureUrl.isNotEmpty
-                                ? NetworkImage(profilePictureUrl)
-                                : null,
-                            child: profilePictureUrl.isEmpty
-                                ? const Icon(Icons.person, size: 50)
-                                : null,
-                          ),
-                          if (isLoading)
-                            Container(
-                              color: Colors.black54,
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: pickImage,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundImage: profilePictureUrl.isNotEmpty
+                                  ? NetworkImage(profilePictureUrl)
+                                  : null,
+                              child: profilePictureUrl.isEmpty
+                                  ? const Icon(Icons.person, size: 50)
+                                  : null,
+                            ),
+                            if (isLoading)
+                              Container(
+                                color: Colors.black54,
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
-                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            nickname ?? 'No nickname',
+                            style: NickNameTextStyle().nickNameTextStyle,
+                          ),
+                          Text(biography ?? "No biography yet."),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      nickname ?? 'No nickname',
-                      style: NickNameTextStyle().nickNameTextStyle,
-                    ),
+                    ],
+                  ),
+                ),
+                const Divider(thickness: 2, color: Colors.grey),
+                TabBar(
+                  controller: _tabController,
+                  tabs: const [
+                    Tab(text: 'Your Stories'),
+                    Tab(text: 'Saved Stories'),
                   ],
                 ),
-              ),
-              Text(biography ?? "No biography yet."),
-              const SizedBox(
-                height: 10,
-              ),
-              const Divider(
-                height: 10,
-              ),
-              const SizedBox(
-                height: 10,
-              ),
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('stories')
-                    .where('authorId', isEqualTo: authorId)
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
-                builder: (ctx, storiesSnapshot) {
-                  if (storiesSnapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Your Stories Tab
+                      StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('stories')
+                            .where('authorId',
+                                isEqualTo:
+                                    FirebaseAuth.instance.currentUser!.uid)
+                            .orderBy('timestamp', descending: true)
+                            .snapshots(),
+                        builder: (ctx, storiesSnapshot) {
+                          if (storiesSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
 
-                  if (storiesSnapshot.hasError) {
-                    return Center(
-                        child:
-                            Text('Error: ${storiesSnapshot.error.toString()}'));
-                  }
+                          if (storiesSnapshot.hasError) {
+                            return Center(
+                                child: Text(
+                                    'Error: ${storiesSnapshot.error.toString()}'));
+                          }
 
-                  if (!storiesSnapshot.hasData ||
-                      storiesSnapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text('No stories found.'));
-                  }
+                          if (!storiesSnapshot.hasData ||
+                              storiesSnapshot.data!.docs.isEmpty) {
+                            return const Center(
+                                child: Text('No stories found.'));
+                          }
 
-                  final userStoriesDocs = storiesSnapshot.data!.docs;
+                          final userStoriesDocs = storiesSnapshot.data!.docs;
 
-                  return Expanded(
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 10),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              "Your stories: ${userStoriesDocs.length}",
-                              style:
-                                  YourStoriesTextStyle().yourStoriesTextStyle,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(
-                          height: 10,
-                        ),
-                        Expanded(
-                          child: ListView.builder(
+                          return ListView.builder(
                             itemCount: userStoriesDocs.length,
                             itemBuilder: (ctx, index) {
                               return UserStoriesCard(
@@ -225,16 +222,86 @@ class _ProfilePageState extends State<ProfilePage> {
                                     ['authorProfilePic'],
                               );
                             },
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-          );
-        },
+                          );
+                        },
+                      ),
+                      // Saved Stories Tab
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser!.uid)
+                            .snapshots(),
+                        builder: (ctx, userSnapshot) {
+                          if (userSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
+
+                          if (userSnapshot.hasError) {
+                            return Center(
+                                child: Text(
+                                    'Error: ${userSnapshot.error.toString()}'));
+                          }
+
+                          if (!userSnapshot.hasData ||
+                              !userSnapshot.data!.exists) {
+                            return const Center(
+                                child: Text('User data not found.'));
+                          }
+
+                          final userData =
+                              userSnapshot.data!.data() as Map<String, dynamic>;
+                          final savedStories =
+                              userData['savedStories'] as List<dynamic>? ?? [];
+
+                          return ListView.builder(
+                            itemCount: savedStories.length,
+                            itemBuilder: (ctx, index) {
+                              return FutureBuilder<DocumentSnapshot>(
+                                future: FirebaseFirestore.instance
+                                    .collection('stories')
+                                    .doc(savedStories[index] as String)
+                                    .get(),
+                                builder: (ctx, storySnapshot) {
+                                  if (storySnapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                        child: CircularProgressIndicator());
+                                  }
+
+                                  if (storySnapshot.hasError) {
+                                    return Center(
+                                        child: Text(
+                                            'Error: ${storySnapshot.error.toString()}'));
+                                  }
+
+                                  if (!storySnapshot.hasData ||
+                                      !storySnapshot.data!.exists) {
+                                    return const Center(
+                                        child: Text('Story not found.'));
+                                  }
+
+                                  final story = storySnapshot.data!;
+                                  return UserStoriesCard(
+                                    title: story['title'],
+                                    content: story['content'],
+                                    authorUsername: story['authorUsername'],
+                                    authorProfilePic: story['authorProfilePic'],
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -247,5 +314,10 @@ class NickNameTextStyle {
 
 class YourStoriesTextStyle {
   TextStyle yourStoriesTextStyle =
+      const TextStyle(fontSize: 20, fontWeight: FontWeight.bold);
+}
+
+class SavedStoriesTextStyle {
+  TextStyle savedStoriesTextStyle =
       const TextStyle(fontSize: 20, fontWeight: FontWeight.bold);
 }

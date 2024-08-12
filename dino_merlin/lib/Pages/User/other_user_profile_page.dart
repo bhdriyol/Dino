@@ -7,12 +7,14 @@ class OtherUserProfilePage extends StatefulWidget {
   final String profilePictureUrl;
   final String nickname;
   final String biography;
-  const OtherUserProfilePage(
-      {super.key,
-      required this.userId,
-      required this.nickname,
-      required this.profilePictureUrl,
-      required this.biography});
+
+  const OtherUserProfilePage({
+    super.key,
+    required this.userId,
+    required this.nickname,
+    required this.profilePictureUrl,
+    required this.biography,
+  });
 
   @override
   _OtherUserProfilePageState createState() => _OtherUserProfilePageState();
@@ -35,7 +37,9 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
           .get();
 
       if (userDoc.exists) {
-        print(widget.userId);
+        setState(() {
+          isLoading = false;
+        });
       } else {
         print('User with ID ${widget.userId} does not exist.');
         setState(() {
@@ -67,22 +71,22 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundImage: widget.profilePictureUrl != null
-                              ? NetworkImage(widget.profilePictureUrl!)
+                          backgroundImage: widget.profilePictureUrl.isNotEmpty
+                              ? NetworkImage(widget.profilePictureUrl)
                               : null,
-                          child: widget.profilePictureUrl == null
+                          child: widget.profilePictureUrl.isEmpty
                               ? const Icon(Icons.person, size: 50)
                               : null,
                         ),
                         const SizedBox(width: 16),
                         Text(
-                          widget.nickname ?? 'No nickname',
+                          widget.nickname,
                           style: NickNameTextStyle().nickNameTextStyle,
                         ),
                       ],
                     ),
                   ),
-                  Text(widget.biography ?? "No biography yet."),
+                  Text(widget.biography),
                   const SizedBox(height: 10),
                   const Divider(height: 10),
                   const SizedBox(height: 10),
