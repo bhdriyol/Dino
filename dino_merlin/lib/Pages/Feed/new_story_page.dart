@@ -59,7 +59,12 @@ class _NewStoryPageState extends State<NewStoryPage> {
         "dislikes": [],
         'timestamp': FieldValue.serverTimestamp(),
       });
-
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .update({
+        'shares': FieldValue.arrayUnion([storyId])
+      });
       Navigator.of(context).pop();
     } catch (e) {
       print('Error: $e');

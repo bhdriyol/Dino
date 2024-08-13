@@ -42,6 +42,13 @@ class _StoriesCardState extends State<StoriesCard> {
     _checkUserInteraction();
   }
 
+  void didUpdateWidget(StoriesCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.storyId != widget.storyId) {
+      _checkUserInteraction();
+    }
+  }
+
   Future<void> _checkUserInteraction() async {
     String currentUserId = FirebaseAuth.instance.currentUser!.uid;
     DocumentSnapshot storyDoc = await FirebaseFirestore.instance
@@ -150,6 +157,7 @@ class _StoriesCardState extends State<StoriesCard> {
 
       setState(() {
         isSaved = false;
+        saveCount--;
       });
     } else {
       storyRef.update({
@@ -162,6 +170,7 @@ class _StoriesCardState extends State<StoriesCard> {
 
       setState(() {
         isSaved = true;
+        saveCount++;
       });
     }
   }
@@ -182,16 +191,20 @@ class _StoriesCardState extends State<StoriesCard> {
   Widget build(BuildContext context) {
     return IntrinsicHeight(
       child: GestureDetector(
-        onTap: () {
-          Navigator.of(context).push(
+        onTap: () async {
+          await Navigator.of(context).push(
             MaterialPageRoute(
-                builder: (context) => StoryDetailPage(
-                      title: widget.title,
-                      content: widget.content,
-                      authorUsername: widget.authorUsername,
-                      authorProfilePic: widget.authorProfilePic,
-                    )),
+              builder: (context) => StoryDetailPage(
+                title: widget.title,
+                content: widget.content,
+                authorUsername: widget.authorUsername,
+                authorProfilePic: widget.authorProfilePic,
+                storyId: widget.storyId,
+                onInteractionUpdate: _checkUserInteraction,
+              ),
+            ),
           );
+          _checkUserInteraction();
         },
         child: Card(
           child: Padding(
@@ -251,8 +264,6 @@ class _StoriesCardState extends State<StoriesCard> {
                               color: isSaved ? Colors.green : null,
                             ),
                           ),
-                          Text(saveCount.toString(),
-                              style: CountTextStyle().countTextStyle),
                         ],
                       ),
                       Row(

@@ -20,6 +20,8 @@ class _RegisterPageState extends State<RegisterPage> {
   String username = "";
   String profilePic = "";
   String biography = "";
+  int following = 0;
+  int followers = 0;
   String emailError = '';
   String usernameError = "";
   String passwordError = '';
@@ -39,7 +41,6 @@ class _RegisterPageState extends State<RegisterPage> {
       UserCredential userCredential = await auth.createUserWithEmailAndPassword(
           email: email, password: password);
 
-      // Use the Firebase Authentication uid as the document ID
       String userId = userCredential.user!.uid;
 
       await FirebaseFirestore.instance.collection('users').doc(userId).set({
@@ -47,6 +48,8 @@ class _RegisterPageState extends State<RegisterPage> {
         'username': username,
         'profilePic': profilePic,
         'biography': biography,
+        "following": following,
+        "followers": followers,
         'registerDate': FieldValue.serverTimestamp(),
       }).then((_) {
         print('User data added to Firestore');

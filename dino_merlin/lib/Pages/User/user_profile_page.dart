@@ -92,7 +92,6 @@ class _ProfilePageState extends State<ProfilePage>
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('My Profile'),
           actions: [
             IconButton(
               icon: const Icon(Icons.logout),
@@ -168,64 +167,161 @@ class _ProfilePageState extends State<ProfilePage>
                     ],
                   ),
                 ),
+                //!User Infos
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    FutureBuilder<QuerySnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('stories')
+                          .where('authorId',
+                              isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+                          .get(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const CircularProgressIndicator();
+                        }
+
+                        if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
+
+                        final sharedCount = snapshot.data?.docs.length ?? 0;
+
+                        return Text(
+                          'Shared: $sharedCount',
+                        );
+                      },
+                    ),
+                    const SizedBox(
+                      height: 20,
+                      child: VerticalDivider(
+                        thickness: 2,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Text('Following: ${userDoc['following'] ?? 0}'),
+                    const SizedBox(
+                      height: 20,
+                      child: VerticalDivider(
+                        thickness: 2,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Text('Followers: ${userDoc['followers'] ?? 0}'),
+                  ],
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
                 const Divider(thickness: 2, color: Colors.grey),
                 TabBar(
                   controller: _tabController,
-                  tabs: const [
-                    Tab(text: 'Your Stories'),
-                    Tab(text: 'Saved Stories'),
+                  labelColor: Colors.deepPurple,
+                  dividerColor: Colors.deepPurple,
+                  dividerHeight: 0,
+                  tabs: [
+                    Tab(
+                      child: Text(
+                        "Your Stories",
+                        style: YourStoriesTextStyle().yourStoriesTextStyle,
+                      ),
+                    ),
+                    Tab(
+                      child: Text(
+                        "Saved Stories",
+                        style: SavedStoriesTextStyle().savedStoriesTextStyle,
+                      ),
+                    ),
                   ],
+                ),
+                const SizedBox(
+                  height: 10,
                 ),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      // Your Stories Tab
-                      StreamBuilder<QuerySnapshot>(
+                      //! Your Stories Tab
+                      StreamBuilder<DocumentSnapshot>(
                         stream: FirebaseFirestore.instance
-                            .collection('stories')
-                            .where('authorId',
-                                isEqualTo:
-                                    FirebaseAuth.instance.currentUser!.uid)
-                            .orderBy('timestamp', descending: true)
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser!.uid)
                             .snapshots(),
-                        builder: (ctx, storiesSnapshot) {
-                          if (storiesSnapshot.connectionState ==
+                        builder: (ctx, userSnapshot) {
+                          if (userSnapshot.connectionState ==
                               ConnectionState.waiting) {
                             return const Center(
                                 child: CircularProgressIndicator());
                           }
 
-                          if (storiesSnapshot.hasError) {
+                          if (userSnapshot.hasError) {
                             return Center(
                                 child: Text(
-                                    'Error: ${storiesSnapshot.error.toString()}'));
+                                    'Error: ${userSnapshot.error.toString()}'));
                           }
 
-                          if (!storiesSnapshot.hasData ||
-                              storiesSnapshot.data!.docs.isEmpty) {
+                          if (!userSnapshot.hasData ||
+                              !userSnapshot.data!.exists) {
+                            return const Center(child: Text('User not found.'));
+                          }
+
+                          List<String> storyIds = List<String>.from(
+                              userSnapshot.data!['shares'] ?? []);
+
+                          if (storyIds.isEmpty) {
                             return const Center(
                                 child: Text('No stories found.'));
                           }
 
-                          final userStoriesDocs = storiesSnapshot.data!.docs;
+                          return StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('stories')
+                                .where('storyId', whereIn: storyIds)
+                                .orderBy('timestamp', descending: true)
+                                .snapshots(),
+                            builder: (ctx, storiesSnapshot) {
+                              if (storiesSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
 
-                          return ListView.builder(
-                            itemCount: userStoriesDocs.length,
-                            itemBuilder: (ctx, index) {
-                              return UserStoriesCard(
-                                title: userStoriesDocs[index]['title'],
-                                content: userStoriesDocs[index]['content'],
-                                authorUsername: userStoriesDocs[index]
-                                    ['authorUsername'],
-                                authorProfilePic: userStoriesDocs[index]
-                                    ['authorProfilePic'],
+                              if (storiesSnapshot.hasError) {
+                                return Center(
+                                    child: Text(
+                                        'Error: ${storiesSnapshot.error.toString()}'));
+                              }
+
+                              if (!storiesSnapshot.hasData ||
+                                  storiesSnapshot.data!.docs.isEmpty) {
+                                return const Center(
+                                    child: Text('No stories found.'));
+                              }
+
+                              final userStoriesDocs =
+                                  storiesSnapshot.data!.docs;
+
+                              return ListView.builder(
+                                itemCount: userStoriesDocs.length,
+                                itemBuilder: (ctx, index) {
+                                  return UserStoriesCard(
+                                    title: userStoriesDocs[index]['title'],
+                                    content: userStoriesDocs[index]['content'],
+                                    authorUsername: userStoriesDocs[index]
+                                        ['authorUsername'],
+                                    authorProfilePic: userStoriesDocs[index]
+                                        ['authorProfilePic'],
+                                  );
+                                },
                               );
                             },
                           );
                         },
                       ),
-                      // Saved Stories Tab
+
+                      //! Saved Stories Tab
                       StreamBuilder<DocumentSnapshot>(
                         stream: FirebaseFirestore.instance
                             .collection('users')
@@ -313,11 +409,13 @@ class NickNameTextStyle {
 }
 
 class YourStoriesTextStyle {
-  TextStyle yourStoriesTextStyle =
-      const TextStyle(fontSize: 20, fontWeight: FontWeight.bold);
+  TextStyle yourStoriesTextStyle = const TextStyle(
+    fontSize: 18,
+  );
 }
 
 class SavedStoriesTextStyle {
-  TextStyle savedStoriesTextStyle =
-      const TextStyle(fontSize: 20, fontWeight: FontWeight.bold);
+  TextStyle savedStoriesTextStyle = const TextStyle(
+    fontSize: 18,
+  );
 }

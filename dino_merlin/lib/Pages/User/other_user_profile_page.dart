@@ -1,3 +1,4 @@
+import 'package:dino_merlin/Widgets/follow_button.dart';
 import 'package:dino_merlin/Widgets/user_stories_card.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,6 +23,7 @@ class OtherUserProfilePage extends StatefulWidget {
 
 class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
   bool isLoading = true;
+  Map<String, dynamic>? userDoc;
 
   @override
   void initState() {
@@ -31,13 +33,14 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
 
   Future<void> loadUserData() async {
     try {
-      final userDoc = await FirebaseFirestore.instance
+      final userSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
           .get();
 
-      if (userDoc.exists) {
+      if (userSnapshot.exists) {
         setState(() {
+          userDoc = userSnapshot.data();
           isLoading = false;
         });
       } else {
@@ -62,35 +65,94 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundImage: widget.profilePictureUrl.isNotEmpty
-                              ? NetworkImage(widget.profilePictureUrl)
-                              : null,
-                          child: widget.profilePictureUrl.isEmpty
-                              ? const Icon(Icons.person, size: 50)
-                              : null,
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundImage: widget.profilePictureUrl.isNotEmpty
+                            ? NetworkImage(widget.profilePictureUrl)
+                            : null,
+                        child: widget.profilePictureUrl.isEmpty
+                            ? const Icon(Icons.person, size: 50)
+                            : null,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  widget.nickname,
+                                  style: NickNameTextStyle().nickNameTextStyle,
+                                ),
+                                const FollowButton(),
+                              ],
+                            ),
+                            Text(widget.biography),
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Text(
-                          widget.nickname,
-                          style: NickNameTextStyle().nickNameTextStyle,
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  Text(widget.biography),
-                  const SizedBox(height: 10),
-                  const Divider(height: 10),
-                  const SizedBox(height: 10),
-                  StreamBuilder<QuerySnapshot>(
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    FutureBuilder<QuerySnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('stories')
+                          .where('authorId', isEqualTo: widget.userId)
+                          .get(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const CircularProgressIndicator();
+                        }
+
+                        if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
+
+                        final sharedCount = snapshot.data?.docs.length ?? 0;
+
+                        return Text(
+                          'Shared: $sharedCount',
+                        );
+                      },
+                    ),
+                    const SizedBox(
+                      height: 20,
+                      child: VerticalDivider(
+                        thickness: 2,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Text('Following: ${userDoc?['following'] ?? 0}'),
+                    const SizedBox(
+                      height: 20,
+                      child: VerticalDivider(
+                        thickness: 2,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    Text('Followers: ${userDoc?['followers'] ?? 0}'),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Divider(thickness: 2, color: Colors.grey),
+                const SizedBox(
+                  height: 10,
+                ),
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('stories')
                         .where('authorId', isEqualTo: widget.userId)
@@ -117,30 +179,27 @@ class _OtherUserProfilePageState extends State<OtherUserProfilePage> {
 
                       return Column(
                         children: [
-                          Text(
-                            "Total stories: ${userStoriesDocs.length}",
-                            style: AllStoriesTextStyle().allStoriesTextStyle,
-                          ),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: userStoriesDocs.length,
-                            itemBuilder: (ctx, index) {
-                              return UserStoriesCard(
-                                title: userStoriesDocs[index]['title'],
-                                content: userStoriesDocs[index]['content'],
-                                authorUsername: userStoriesDocs[index]
-                                    ['authorUsername'],
-                                authorProfilePic: userStoriesDocs[index]
-                                    ['authorProfilePic'],
-                              );
-                            },
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: userStoriesDocs.length,
+                              itemBuilder: (ctx, index) {
+                                return UserStoriesCard(
+                                  title: userStoriesDocs[index]['title'],
+                                  content: userStoriesDocs[index]['content'],
+                                  authorUsername: userStoriesDocs[index]
+                                      ['authorUsername'],
+                                  authorProfilePic: userStoriesDocs[index]
+                                      ['authorProfilePic'],
+                                );
+                              },
+                            ),
                           ),
                         ],
                       );
                     },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
     );
   }
