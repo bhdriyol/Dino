@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
 }
 
 class InitialScreen extends StatelessWidget {
-  Future<bool> _checkRememberMe() async {
+  Future<bool> checkRememberMe() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool rememberMe = prefs.getBool('rememberMe') ?? false;
     User? user = FirebaseAuth.instance.currentUser;
@@ -36,7 +36,7 @@ class InitialScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: _checkRememberMe(),
+      future: checkRememberMe(),
       builder: (context, AsyncSnapshot<bool> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator();

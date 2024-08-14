@@ -75,7 +75,7 @@ class _NewStoryPageState extends State<NewStoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add a Story'),
+        title: const Text('Share Something'),
       ),
       body: SingleChildScrollView(
         child: Padding(

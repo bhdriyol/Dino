@@ -2,6 +2,7 @@ import 'package:dino_merlin/Pages/Feed/new_story_page.dart';
 import 'package:dino_merlin/Widgets/feed_stories_card.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FeedPage extends StatefulWidget {
   FeedPage({
@@ -15,11 +16,13 @@ class FeedPage extends StatefulWidget {
 class _FeedPageState extends State<FeedPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late String currentUserId;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    currentUserId = FirebaseAuth.instance.currentUser!.uid;
   }
 
   @override
@@ -43,6 +46,7 @@ class _FeedPageState extends State<FeedPage>
         body: TabBarView(
           controller: _tabController,
           children: [
+            //! Main Feed Tab
             StreamBuilder(
               stream: FirebaseFirestore.instance
                   .collection('stories')
@@ -65,22 +69,84 @@ class _FeedPageState extends State<FeedPage>
                 return ListView.builder(
                   itemCount: storiesDocs.length,
                   itemBuilder: (ctx, index) {
-                    return StoriesCard(
+                    return FeedStoriesCard(
                       key: ValueKey(storiesDocs[index].id),
                       title: storiesDocs[index]["title"],
                       content: storiesDocs[index]["content"],
-                      authorUsername: storiesDocs[index]["authorUsername"],
-                      authorProfilePic: storiesDocs[index]["authorProfilePic"],
                       authorId: storiesDocs[index]["authorId"],
-                      authorBiography: storiesDocs[index]["authorBiography"],
                       storyId: storiesDocs[index]["storyId"],
                     );
                   },
                 );
               },
             ),
-            //! New Stories Tab
-            const Center(child: Text("Nothing to see.")),
+            //! Followed Stories Tab
+            StreamBuilder(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(currentUserId)
+                  .snapshots(),
+              builder: (ctx, AsyncSnapshot<DocumentSnapshot> userSnapshot) {
+                if (userSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (userSnapshot.hasError) {
+                  return const Center(child: Text('An error occurred.'));
+                }
+
+                if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                  return const Center(
+                      child: Text('No followed stories found.'));
+                }
+
+                List<String> followedUserIds =
+                    List<String>.from(userSnapshot.data!['following'] ?? []);
+
+                if (followedUserIds.isEmpty) {
+                  return const Center(
+                      child: Text('No followed stories found.'));
+                }
+
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('stories')
+                      .where('authorId', whereIn: followedUserIds)
+                      .orderBy('timestamp', descending: true)
+                      .snapshots(),
+                  builder:
+                      (ctx, AsyncSnapshot<QuerySnapshot> followedSnapshot) {
+                    if (followedSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (followedSnapshot.hasError) {
+                      return const Center(child: Text('An error occurred.'));
+                    }
+
+                    if (!followedSnapshot.hasData ||
+                        followedSnapshot.data!.docs.isEmpty) {
+                      return const Center(child: Text('No followed found.'));
+                    }
+
+                    final followedStoriesDocs = followedSnapshot.data!.docs;
+                    return ListView.builder(
+                      itemCount: followedStoriesDocs.length,
+                      itemBuilder: (ctx, index) {
+                        return FeedStoriesCard(
+                          key: ValueKey(followedStoriesDocs[index].id),
+                          title: followedStoriesDocs[index]["title"],
+                          content: followedStoriesDocs[index]["content"],
+                          authorId: followedStoriesDocs[index]["authorId"],
+                          storyId: followedStoriesDocs[index]["storyId"],
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
           ],
         ),
         floatingActionButton: FloatingActionButton(

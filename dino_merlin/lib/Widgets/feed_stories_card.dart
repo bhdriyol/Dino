@@ -4,31 +4,25 @@ import 'package:dino_merlin/Pages/User/other_user_profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class StoriesCard extends StatefulWidget {
-  const StoriesCard({
+class FeedStoriesCard extends StatefulWidget {
+  const FeedStoriesCard({
     super.key,
     required this.title,
     required this.content,
-    required this.authorUsername,
-    required this.authorProfilePic,
     required this.authorId,
-    required this.authorBiography,
     required this.storyId,
   });
 
   final String title;
   final String content;
-  final String authorUsername;
-  final String authorProfilePic;
   final String authorId;
-  final String authorBiography;
   final String storyId;
 
   @override
   _StoriesCardState createState() => _StoriesCardState();
 }
 
-class _StoriesCardState extends State<StoriesCard> {
+class _StoriesCardState extends State<FeedStoriesCard> {
   bool isLiked = false;
   bool isDisliked = false;
   bool isSaved = false;
@@ -36,16 +30,31 @@ class _StoriesCardState extends State<StoriesCard> {
   int dislikeCount = 0;
   int saveCount = 0;
 
+  String authorUsername = '';
+  String authorProfilePic = '';
+  String authorBiography = '';
+  int followersCount = 0;
+
   @override
   void initState() {
     super.initState();
+    _fetchAuthorDetails();
     _checkUserInteraction();
   }
 
-  void didUpdateWidget(StoriesCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.storyId != widget.storyId) {
-      _checkUserInteraction();
+  Future<void> _fetchAuthorDetails() async {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.authorId)
+        .get();
+
+    if (userDoc.exists) {
+      setState(() {
+        authorUsername = userDoc['username'] ?? '';
+        authorProfilePic = userDoc['profilePic'] ?? '';
+        authorBiography = userDoc['biography'] ?? '';
+        followersCount = userDoc['followers']?.length ?? 0;
+      });
     }
   }
 
@@ -180,9 +189,6 @@ class _StoriesCardState extends State<StoriesCard> {
       MaterialPageRoute(
           builder: (context) => OtherUserProfilePage(
                 userId: widget.authorId,
-                nickname: widget.authorUsername,
-                profilePictureUrl: widget.authorProfilePic,
-                biography: widget.authorBiography,
               )),
     );
   }
@@ -197,9 +203,10 @@ class _StoriesCardState extends State<StoriesCard> {
               builder: (context) => StoryDetailPage(
                 title: widget.title,
                 content: widget.content,
-                authorUsername: widget.authorUsername,
-                authorProfilePic: widget.authorProfilePic,
+                authorUsername: authorUsername,
+                authorProfilePic: authorProfilePic,
                 storyId: widget.storyId,
+                authorId: widget.authorId,
                 onInteractionUpdate: _checkUserInteraction,
               ),
             ),
@@ -269,14 +276,18 @@ class _StoriesCardState extends State<StoriesCard> {
                       Row(
                         children: [
                           Text(
-                            widget.authorUsername,
+                            authorUsername,
                             style: UsernameTextStyle().usernameTextStyle,
                           ),
                           const SizedBox(width: 10),
                           CircleAvatar(
                             radius: 20,
-                            backgroundImage:
-                                NetworkImage(widget.authorProfilePic),
+                            backgroundImage: authorProfilePic.isNotEmpty &&
+                                    authorProfilePic.startsWith('http')
+                                ? NetworkImage(authorProfilePic)
+                                : const AssetImage(
+                                        'assets/images/default_profile.png')
+                                    as ImageProvider, // Default image
                           ),
                         ],
                       ),

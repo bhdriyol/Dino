@@ -48,8 +48,8 @@ class _RegisterPageState extends State<RegisterPage> {
         'username': username,
         'profilePic': profilePic,
         'biography': biography,
-        "following": following,
-        "followers": followers,
+        "following": <String>[],
+        "followers": <String>[],
         'registerDate': FieldValue.serverTimestamp(),
       }).then((_) {
         print('User data added to Firestore');

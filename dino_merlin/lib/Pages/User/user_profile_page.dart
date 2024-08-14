@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dino_merlin/Pages/Auth/login_page.dart';
+import 'package:dino_merlin/Pages/User/follows_page.dart';
 import 'package:dino_merlin/Widgets/user_stories_card.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -79,11 +80,25 @@ class _ProfilePageState extends State<ProfilePage>
     }
   }
 
+  void _navigateToFollowsPage(BuildContext context, int initialTabIndex) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => FollowsPage(
+            initialTabIndex: initialTabIndex,
+            username: nickname ?? "No nickname"),
+      ),
+    );
+  }
+
   void logOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const LoginPage()),
     );
+  }
+
+  Future<void> refresh() async {
+    setState(() {});
   }
 
   @override
@@ -167,73 +182,106 @@ class _ProfilePageState extends State<ProfilePage>
                     ],
                   ),
                 ),
-                //!User Infos
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    FutureBuilder<QuerySnapshot>(
-                      future: FirebaseFirestore.instance
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: FutureBuilder<Map<String, dynamic>>(
+                    future: Future.wait([
+                      FirebaseFirestore.instance
                           .collection('stories')
                           .where('authorId',
                               isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-                          .get(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
-                        }
+                          .get()
+                          .then((snapshot) => {
+                                'sharedCount': snapshot.docs.length,
+                              }),
+                      FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(FirebaseAuth.instance.currentUser!.uid)
+                          .get()
+                          .then((snapshot) => {
+                                'followingCount':
+                                    (snapshot.data()?['following'] as List?)
+                                            ?.length ??
+                                        0,
+                                'followersCount':
+                                    (snapshot.data()?['followers'] as List?)
+                                            ?.length ??
+                                        0,
+                              })
+                    ]).then((results) => {
+                          'sharedCount': results[0]['sharedCount'],
+                          'followingCount': results[1]['followingCount'],
+                          'followersCount': results[1]['followersCount']
+                        }),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const CircularProgressIndicator();
+                      }
 
-                        if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        }
+                      if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      }
 
-                        final sharedCount = snapshot.data?.docs.length ?? 0;
+                      final data = snapshot.data;
+                      final sharedCount = data?['sharedCount'] ?? 0;
+                      final followingCount = data?['followingCount'] ?? 0;
+                      final followersCount = data?['followersCount'] ?? 0;
 
-                        return Text(
-                          'Shared: $sharedCount',
-                        );
-                      },
-                    ),
-                    const SizedBox(
-                      height: 20,
-                      child: VerticalDivider(
-                        thickness: 2,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    Text('Following: ${userDoc['following'] ?? 0}'),
-                    const SizedBox(
-                      height: 20,
-                      child: VerticalDivider(
-                        thickness: 2,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    Text('Followers: ${userDoc['followers'] ?? 0}'),
-                  ],
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Text(
+                            'Shared: $sharedCount',
+                          ),
+                          const SizedBox(
+                            height: 20,
+                            child: VerticalDivider(
+                              thickness: 2,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => _navigateToFollowsPage(
+                                context, 0), // Takipçiler sekmesi
+                            child: Column(
+                              children: [
+                                Text('Followers: $followersCount'),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(
+                            height: 20,
+                            child: VerticalDivider(
+                              thickness: 2,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => _navigateToFollowsPage(
+                                context, 1), // Takip edilenler sekmesi
+                            child: Column(
+                              children: [
+                                Text('Following: $followingCount'),
+                              ],
+                            ),
+                          )
+                        ],
+                      );
+                    },
+                  ),
                 ),
+                const Divider(thickness: 2, color: Colors.grey),
                 const SizedBox(
                   height: 10,
                 ),
-                const Divider(thickness: 2, color: Colors.grey),
                 TabBar(
+                  dividerHeight: 0,
                   controller: _tabController,
                   labelColor: Colors.deepPurple,
-                  dividerColor: Colors.deepPurple,
-                  dividerHeight: 0,
-                  tabs: [
-                    Tab(
-                      child: Text(
-                        "Your Stories",
-                        style: YourStoriesTextStyle().yourStoriesTextStyle,
-                      ),
-                    ),
-                    Tab(
-                      child: Text(
-                        "Saved Stories",
-                        style: SavedStoriesTextStyle().savedStoriesTextStyle,
-                      ),
-                    ),
+                  indicatorColor: Colors.deepPurple,
+                  tabs: const [
+                    Tab(text: 'Your Stories'),
+                    Tab(text: 'Saved Stories'),
                   ],
                 ),
                 const SizedBox(
@@ -244,152 +292,113 @@ class _ProfilePageState extends State<ProfilePage>
                     controller: _tabController,
                     children: [
                       //! Your Stories Tab
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(FirebaseAuth.instance.currentUser!.uid)
-                            .snapshots(),
-                        builder: (ctx, userSnapshot) {
-                          if (userSnapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
+                      RefreshIndicator(
+                        onRefresh: refresh,
+                        child: FutureBuilder<QuerySnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('stories')
+                              .where('authorId',
+                                  isEqualTo:
+                                      FirebaseAuth.instance.currentUser!.uid)
+                              .get(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
+                            }
 
-                          if (userSnapshot.hasError) {
-                            return Center(
-                                child: Text(
-                                    'Error: ${userSnapshot.error.toString()}'));
-                          }
+                            if (snapshot.hasError) {
+                              return Center(
+                                  child: Text('Error: ${snapshot.error}'));
+                            }
 
-                          if (!userSnapshot.hasData ||
-                              !userSnapshot.data!.exists) {
-                            return const Center(child: Text('User not found.'));
-                          }
-
-                          List<String> storyIds = List<String>.from(
-                              userSnapshot.data!['shares'] ?? []);
-
-                          if (storyIds.isEmpty) {
-                            return const Center(
-                                child: Text('No stories found.'));
-                          }
-
-                          return StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('stories')
-                                .where('storyId', whereIn: storyIds)
-                                .orderBy('timestamp', descending: true)
-                                .snapshots(),
-                            builder: (ctx, storiesSnapshot) {
-                              if (storiesSnapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Center(
-                                    child: CircularProgressIndicator());
-                              }
-
-                              if (storiesSnapshot.hasError) {
-                                return Center(
-                                    child: Text(
-                                        'Error: ${storiesSnapshot.error.toString()}'));
-                              }
-
-                              if (!storiesSnapshot.hasData ||
-                                  storiesSnapshot.data!.docs.isEmpty) {
-                                return const Center(
-                                    child: Text('No stories found.'));
-                              }
-
-                              final userStoriesDocs =
-                                  storiesSnapshot.data!.docs;
-
-                              return ListView.builder(
-                                itemCount: userStoriesDocs.length,
-                                itemBuilder: (ctx, index) {
-                                  return UserStoriesCard(
-                                    title: userStoriesDocs[index]['title'],
-                                    content: userStoriesDocs[index]['content'],
-                                    authorUsername: userStoriesDocs[index]
-                                        ['authorUsername'],
-                                    authorProfilePic: userStoriesDocs[index]
-                                        ['authorProfilePic'],
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        },
+                            final stories = snapshot.data?.docs ?? [];
+                            return ListView.builder(
+                              itemCount: stories.length,
+                              itemBuilder: (context, index) {
+                                final story = stories[index];
+                                final storyData =
+                                    story.data() as Map<String, dynamic>;
+                                return UserStoriesCard(
+                                  title: storyData['title'] ?? 'No Title',
+                                  content: storyData['content'] ?? 'No Content',
+                                  authorId: storyData['authorId'],
+                                  storyId: storyData["storyId"],
+                                );
+                              },
+                            );
+                          },
+                        ),
                       ),
-
                       //! Saved Stories Tab
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(FirebaseAuth.instance.currentUser!.uid)
-                            .snapshots(),
-                        builder: (ctx, userSnapshot) {
-                          if (userSnapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
+                      RefreshIndicator(
+                        onRefresh: refresh,
+                        child: FutureBuilder<DocumentSnapshot>(
+                          future: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(FirebaseAuth.instance.currentUser!.uid)
+                              .get(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
+                            }
 
-                          if (userSnapshot.hasError) {
-                            return Center(
-                                child: Text(
-                                    'Error: ${userSnapshot.error.toString()}'));
-                          }
+                            if (snapshot.hasError) {
+                              return Center(
+                                  child: Text('Error: ${snapshot.error}'));
+                            }
 
-                          if (!userSnapshot.hasData ||
-                              !userSnapshot.data!.exists) {
-                            return const Center(
-                                child: Text('User data not found.'));
-                          }
+                            final userDoc = snapshot.data;
+                            final savedStoriesIds =
+                                (userDoc?['savedStories'] as List?)
+                                        ?.cast<String>() ??
+                                    [];
+                            return FutureBuilder<List<DocumentSnapshot>>(
+                              future: Future.wait(
+                                savedStoriesIds.map(
+                                  (storyId) => FirebaseFirestore.instance
+                                      .collection('stories')
+                                      .doc(storyId)
+                                      .get(),
+                                ),
+                              ),
+                              builder: (context, savedStoriesSnapshot) {
+                                if (savedStoriesSnapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                      child: CircularProgressIndicator());
+                                }
 
-                          final userData =
-                              userSnapshot.data!.data() as Map<String, dynamic>;
-                          final savedStories =
-                              userData['savedStories'] as List<dynamic>? ?? [];
+                                if (savedStoriesSnapshot.hasError) {
+                                  return Center(
+                                      child: Text(
+                                          'Error: ${savedStoriesSnapshot.error}'));
+                                }
 
-                          return ListView.builder(
-                            itemCount: savedStories.length,
-                            itemBuilder: (ctx, index) {
-                              return FutureBuilder<DocumentSnapshot>(
-                                future: FirebaseFirestore.instance
-                                    .collection('stories')
-                                    .doc(savedStories[index] as String)
-                                    .get(),
-                                builder: (ctx, storySnapshot) {
-                                  if (storySnapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const Center(
-                                        child: CircularProgressIndicator());
-                                  }
-
-                                  if (storySnapshot.hasError) {
-                                    return Center(
-                                        child: Text(
-                                            'Error: ${storySnapshot.error.toString()}'));
-                                  }
-
-                                  if (!storySnapshot.hasData ||
-                                      !storySnapshot.data!.exists) {
-                                    return const Center(
-                                        child: Text('Story not found.'));
-                                  }
-
-                                  final story = storySnapshot.data!;
-                                  return UserStoriesCard(
-                                    title: story['title'],
-                                    content: story['content'],
-                                    authorUsername: story['authorUsername'],
-                                    authorProfilePic: story['authorProfilePic'],
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        },
+                                final savedStories =
+                                    savedStoriesSnapshot.data ?? [];
+                                return ListView.builder(
+                                  itemCount: savedStories.length,
+                                  itemBuilder: (context, index) {
+                                    final story = savedStories[index];
+                                    final storyData =
+                                        story.data() as Map<String, dynamic>;
+                                    return UserStoriesCard(
+                                      title: storyData['title'] ?? 'No Title',
+                                      content:
+                                          storyData['content'] ?? 'No Content',
+                                      authorId: storyData['authorId'],
+                                      storyId: storyData["storyId"],
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -408,14 +417,7 @@ class NickNameTextStyle {
       const TextStyle(fontSize: 24, fontWeight: FontWeight.bold);
 }
 
-class YourStoriesTextStyle {
-  TextStyle yourStoriesTextStyle = const TextStyle(
-    fontSize: 18,
-  );
-}
-
-class SavedStoriesTextStyle {
-  TextStyle savedStoriesTextStyle = const TextStyle(
-    fontSize: 18,
-  );
+class FollowsButtonStyle {
+  TextStyle followsButtonStyle =
+      const TextStyle(color: Colors.white, fontWeight: FontWeight.normal);
 }

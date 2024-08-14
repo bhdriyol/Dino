@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dino_merlin/Pages/User/other_user_profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -11,11 +12,13 @@ class StoryDetailPage extends StatefulWidget {
     required this.authorProfilePic,
     required this.storyId,
     required this.onInteractionUpdate,
+    required this.authorId,
   });
 
   final String title;
   final String content;
   final String authorUsername;
+  final String authorId;
   final String authorProfilePic;
   final String storyId;
   final Function onInteractionUpdate;
@@ -164,6 +167,16 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
     }
   }
 
+  void navigateToUserProfile() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => OtherUserProfilePage(
+          userId: widget.authorId,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -176,7 +189,7 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(15),
           child: Column(
             children: [
               Text(
@@ -229,22 +242,30 @@ class _StoryDetailPageState extends State<StoryDetailPage> {
                       ),
                     ],
                   ),
-                  Row(
-                    children: [
-                      Text(
-                        widget.authorUsername,
-                        style: UsernameTextStyle().usernameTextStyle,
-                      ),
-                      const SizedBox(width: 10),
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundImage: NetworkImage(widget.authorProfilePic),
-                      ),
-                    ],
+                  GestureDetector(
+                    onTap: () {
+                      navigateToUserProfile();
+                    },
+                    child: Row(
+                      children: [
+                        Text(
+                          widget.authorUsername,
+                          style: UsernameTextStyle().usernameTextStyle,
+                        ),
+                        const SizedBox(width: 10),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundImage:
+                              NetworkImage(widget.authorProfilePic),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              Divider(),
+              const Divider(
+                thickness: 2,
+              ),
             ],
           ),
         ),
@@ -261,8 +282,8 @@ class TitleTextStyle {
 }
 
 class ContentTextStyle {
-  TextStyle contentTextStyle = const TextStyle(
-      fontWeight: FontWeight.bold, fontSize: 18, color: Colors.grey);
+  TextStyle contentTextStyle =
+      const TextStyle(fontSize: 18, color: Colors.grey);
 }
 
 class UsernameTextStyle {
