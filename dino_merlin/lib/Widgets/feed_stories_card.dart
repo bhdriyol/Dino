@@ -246,7 +246,7 @@ class _StoriesCardState extends State<FeedStoriesCard> {
                               isLiked
                                   ? Icons.thumb_up_alt
                                   : Icons.thumb_up_alt_outlined,
-                              color: isLiked ? Colors.blue : null,
+                              color: isLiked ? Colors.deepPurple : null,
                             ),
                           ),
                           Text(likeCount.toString(),

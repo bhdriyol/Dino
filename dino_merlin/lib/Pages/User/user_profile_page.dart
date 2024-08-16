@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dino_merlin/Pages/Auth/login_page.dart';
+import 'package:dino_merlin/Pages/Settings/settings_page.dart';
 import 'package:dino_merlin/Pages/User/follows_page.dart';
 import 'package:dino_merlin/Widgets/user_stories_card.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -80,7 +81,7 @@ class _ProfilePageState extends State<ProfilePage>
     }
   }
 
-  void _navigateToFollowsPage(BuildContext context, int initialTabIndex) {
+  void navigateToFollowsPage(BuildContext context, int initialTabIndex) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FollowsPage(
@@ -88,6 +89,16 @@ class _ProfilePageState extends State<ProfilePage>
             username: nickname ?? "No nickname"),
       ),
     );
+  }
+
+  void navigateToSettingsPage(BuildContext context) async {
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const SettingsPage()),
+    );
+
+    if (result == true) {
+      _loadUserData();
+    }
   }
 
   void logOut(BuildContext context) async {
@@ -109,9 +120,10 @@ class _ProfilePageState extends State<ProfilePage>
         appBar: AppBar(
           actions: [
             IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => logOut(context),
-            ),
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  navigateToSettingsPage(context);
+                }),
           ],
         ),
         body: FutureBuilder<DocumentSnapshot>(
@@ -176,7 +188,11 @@ class _ProfilePageState extends State<ProfilePage>
                             nickname ?? 'No nickname',
                             style: NickNameTextStyle().nickNameTextStyle,
                           ),
-                          Text(biography ?? "No biography yet."),
+                          Text(
+                            biography ?? "No biography yet.",
+                            style: const TextStyle(fontSize: 14),
+                            softWrap: true,
+                          ),
                         ],
                       ),
                     ],
@@ -241,8 +257,7 @@ class _ProfilePageState extends State<ProfilePage>
                             ),
                           ),
                           GestureDetector(
-                            onTap: () => _navigateToFollowsPage(
-                                context, 0), // Takipçiler sekmesi
+                            onTap: () => navigateToFollowsPage(context, 0),
                             child: Column(
                               children: [
                                 Text('Followers: $followersCount'),
@@ -257,8 +272,7 @@ class _ProfilePageState extends State<ProfilePage>
                             ),
                           ),
                           GestureDetector(
-                            onTap: () => _navigateToFollowsPage(
-                                context, 1), // Takip edilenler sekmesi
+                            onTap: () => navigateToFollowsPage(context, 1),
                             child: Column(
                               children: [
                                 Text('Following: $followingCount'),
