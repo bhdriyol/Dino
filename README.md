@@ -1,6 +1,8 @@
 # Dino
 
-A social media app where people tell their stories.
+A social media app where people tell their stories. 
+
+**Dino is currently under development, so some features may be missing or not working.**
 
 
 ## Development Setup 
